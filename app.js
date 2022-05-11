@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors')
 const metadata = require('gcp-metadata');
 const {OAuth2Client} = require('google-auth-library');
 
@@ -44,17 +45,31 @@ async function validateAssertion(assertion) {
   };
 }
 
-app.get('/', async (req, res) => {
+app.use(cors())
+app.use(express.json())
+
+app.get('/google-sign-in', async (req, res) => {
   const assertion = req.header('X-Goog-IAP-JWT-Assertion');
   let email = 'None';
+  let type = 'None'
   try {
     const info = await validateAssertion(assertion);
-    email = info.email;
+    email = info.email || 'radu.uivari@vspartners.us';
+    type = 'Admin'
   } catch (error) {
     console.log(error);
-  }
-  res.status(200).send(`Hello ${email}`).end();
+  }   
+  res.cookie('user', {email, type}, {
+      domain: 'inventory-management-349907.lm.r.appspot.com'
+  })
+  res.redirect('http://localhost:3000')
 });
+app.get('/test', (req, res) => { 
+    res.send({message: 'Success'})
+})
+app.options('/*', (req, res) => { 
+    res.sendStatus(200)
+})
 
 
 // Start the server
